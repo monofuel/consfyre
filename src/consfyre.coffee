@@ -14,7 +14,7 @@ world = undefined
 keys = {}
 
 ships = new Image()
-ships.src = "/data/ships3.png"
+ships.src = "./data/ships3.png"
 
 # random number from a to b
 r = (a, b) -> Math.random()*(b-a) + a
@@ -210,7 +210,7 @@ draw = ->
 
   # engine contolr
   if keys[38]
-    force(0,-32, 0, 100000)
+    force(0,-32, 0, 20000)
 
   if keys[37]
     force(-32,-32, 0, 10000)
