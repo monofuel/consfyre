@@ -14,7 +14,7 @@ world = undefined
 keys = {}
 
 ships = new Image()
-ships.src = "/data/ships2.png"
+ships.src = "/data/ships3.png"
 
 # random number from a to b
 r = (a, b) -> Math.random()*(b-a) + a
@@ -245,11 +245,12 @@ $ ->
   world = createWorld()
 
   ship = [
-    [3,0,0,0,3]
-    [1,1,2,1,1]
-    [0,1,2,1,0]
-    [0,0,2,0,0]
-    [0,1,1,1,0]
+    [0,0,3,0,0,0,0]
+    [0,3,13,18,0,0,3]
+    [15,6,14,2,2,2,2]
+    [6,6,4,2,2,10,12]
+    [10,6,16,6,0,0,0]
+    [0,8,0,0,0,0,0]
   ]
 
   box = createPoly(world, 0,0, ship)
