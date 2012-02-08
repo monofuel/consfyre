@@ -33,6 +33,15 @@ $doc.keyup (e) ->
 ships = new Image()
 ships.src = "./data/ships3.png"
 
+fire1 = new Audio()
+fire1.src = './data/fire1.wav'
+
+thruster1 = new Audio()
+thruster1.src = './data/thruster1.wav'
+
+intro = new Audio()
+intro.src = './data/hallow-drone-by-dj-chronos.ogg'
+
 # random number from a to b
 r = (a, b) -> Math.random()*(b-a) + a
 
@@ -71,7 +80,7 @@ createBall = (world, x, y, s) ->
   #console.log "body def", ballSd
   # does not seem to have bullet property
   #ballSd.bullet = true
-  ballSd.density = 2.0
+  ballSd.density = 1.0
   ballSd.radius = s
   ballSd.restitution = 0.6
   ballSd.friction = 0.4
@@ -122,6 +131,7 @@ draw = ->
   # get context
   ctx = fg_canvas.getContext('2d')
 
+
   ctx.save()
   camera_x = -box.m_position.x+width/2
   camera_y = -box.m_position.y+height/2
@@ -162,7 +172,17 @@ draw = ->
         tx = module.tile[0]*16
         ty = module.tile[1]*16
         # draw image
-        ctx.drawImage(ships, tx,ty, 16,16,  -8,-8, 16,16)
+        if module.direction == S
+          # nothing
+        else if module.direction == N
+          ctx.rotate(180/180*Math.PI)
+        else if module.direction == E
+          ctx.rotate(-90/180*Math.PI)
+        else if module.direction == W
+          ctx.rotate(90/180*Math.PI)
+
+        ctx.drawImage(ships, tx,ty, 16, 16,  -8,-8, 16,16)
+
         # restore the ctx
         ctx.restore()
 
@@ -187,6 +207,17 @@ draw = ->
 
   world.Step(1/60, 1);
   ctx.restore()
+
+  ctx.font = "16px EarthMomma"
+  ctx.fillStyle = "#FFF"
+  ctx.fillText("Consfyre .01a", 32, 32)
+  ctx.fillStyle = "#AAA"
+  ctx.font = "8px EarthMomma"
+  ctx.fillText("Construct, Conspire, Crossfire", 32, 32+12);
+
+
+  fire1._played = false
+
   # done request next frame
   requestFrame(draw)
 
@@ -200,12 +231,12 @@ dir = (d, mag) ->
     new b2Vec2(0, -mag)
   else if d == E
     new b2Vec2(mag, 0)
-  else if d == S
+  else if d == W
     new b2Vec2(-mag, 0)
   else
     throw "invalid direction #{d}"
 
-# base module, all modules derive from this
+# base moudle, all modules derive from this
 class Module
   # tile is the x,y position on the ship tile plate
   tile: [0,0]
@@ -219,7 +250,7 @@ class Module
   sim: ->
 
 class Rock extends Module
-  tile: [0, 0]
+  tile: [6, 1]
 
 class Hull extends Module
   tile: [0, 0]
@@ -235,6 +266,7 @@ class Engine extends Module
   # which key controls this engine
   key: null
   constructor: (@direction, @key) ->
+    @off = true
     return
 
   force: (body, x, y, fx,fy) ->
@@ -250,7 +282,7 @@ class Engine extends Module
     body.ApplyImpulse(f, v)
 
     # draw the debug force vectors
-    fire = new b2Vec2(-fx,-fy/100)
+    fire = new b2Vec2(-fx/100,-fy/100)
     fire.MulM(box.sMat0)
     ctx.beginPath()
     ctx.arc(v.x, v.y,5,0,Math.PI*2,true)
@@ -268,10 +300,18 @@ class Engine extends Module
       at_y = shape.m_localCentroid.y
       @force(body, at_x, at_y, vec.x, vec.y)
 
+      if @off
+        t = thruster1.cloneNode(true)
+        t.volume = .1
+        t.play()
+        @off = false
+    else
+      @off = true
+
 # Shoot projectiles based on key press
 # can face 4 directions
 class Gun extends Module
-  tile: [4, 1]
+  tile: [4, 2]
   key: null
   constructor: (@direction, @key) ->
     return
@@ -300,10 +340,18 @@ class Gun extends Module
       f.MulM(box.sMat0)
       # apply for to bullet
       bullet.ApplyImpulse(f, p)
-
+      # play sound
+      if not fire1._played
+        f = fire1.cloneNode(true)
+        f.volume = .3
+        f.play()
+        fire1._played = true
 
 # init function
 $ ->
+
+  intro.play()
+
   $fg = $('#fg')
 
   world = createWorld()
@@ -316,26 +364,26 @@ $ ->
   G = (d,k) -> new Gun(d, k)
 
   # ship definition
-  #ship = [
-  #  [E(N, 39), 0,       E(N,38), 0,       E(N,37)]
-  #  [H(),      H(),     C(),     H(),     H()]
-  #  [0,        H(),     C(),     H(),     0]
-  #  [0,        0,       C(),     0,       0]
-  #  [0,        G(S,32), E(S,40), G(S,32), 0]
-  #]
-
   ship = [
-    [0,        0,       E(N,38), 0,       0,       0,        0]
-    [H(),        E(N,37), H(),     H(),     0,       0,        E(N,39)]
-    [H(),      H(),     H(),     H(),     H(),     H(),      H()]
-    [H(),      H(),     H(),     H(),     0,       E(S,37),   G(S,32)]
-    [E(S,39),  H(),     H(),     0,       0,       0,        0]
+    [E(N,38),  0,       E(N,38), 0,       E(N,38)]
+    [H(),      H(),     C(),     H(),     H()]
+    [0,        E(E, 39),C(),     E(W,37), 0]
+    [0,        H(),     C(),     H(),     0]
+    [0,        G(W,32), C(),     G(E,32), 0]
+    [0,        H(),     C(),     H(),     0]
+    [0,        G(W,32), C(),     G(E,32), 0]
+    [0,        H(),     C(),     H(),     0]
+    [0,        G(W,32), C(),     G(E,32), 0]
+    [0,        H(),     C(),     H(),     0]
+    [0,        E(W, 39),C(),     E(E,37), 0]
+    [0,        H(),     C(),     H(),     0]
+    [0,        0,       E(S,40), 0,       0]
   ]
 
   box = createGrid(world, 0,0, ship)
 
-  for i in [0...30]
-    z = 800
+  for i in [0...20]
+    z = 400
     x = r(-z,z)
     y = r(-z,z)
     xs = r(10,100)
